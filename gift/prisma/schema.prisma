@@ -1,0 +1,116 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  username      String   @unique
+  displayName   String
+  bio           String   @default("")
+  avatarUrl     String   @default("")
+  items         Item[]
+  posts         Post[]
+  likes         Like[]
+  closets       Closet[]
+}
+
+model Item {
+  id            String    @id @default(cuid())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  title         String
+  description   String    @default("")
+  priceCents    Int       @default(0)
+  currency      String    @default("KRW")
+  imageUrl      String    @default("")
+  condition     String    @default("vintage")
+  user          User      @relation(fields: [userId], references: [id])
+  userId        String
+  tags          ItemTag[]
+  likedBy       Like[]
+  closetItems   ClosetItem[]
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  slug      String    @unique
+  name      String
+  items     ItemTag[]
+  posts     PostTag[]
+}
+
+model ItemTag {
+  item   Item @relation(fields: [itemId], references: [id])
+  itemId String
+  tag    Tag  @relation(fields: [tagId], references: [id])
+  tagId  String
+
+  @@id([itemId, tagId])
+}
+
+model Post {
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  author      User      @relation(fields: [authorId], references: [id])
+  authorId    String
+  title       String
+  content     String
+  imageUrl    String    @default("")
+  likes       Like[]
+  tags        PostTag[]
+}
+
+model PostTag {
+  post   Post @relation(fields: [postId], references: [id])
+  postId String
+  tag    Tag  @relation(fields: [tagId], references: [id])
+  tagId  String
+
+  @@id([postId, tagId])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  item      Item?    @relation(fields: [itemId], references: [id])
+  itemId    String?
+  post      Post?    @relation(fields: [postId], references: [id])
+  postId    String?
+
+  @@unique([userId, itemId])
+  @@unique([userId, postId])
+}
+
+model Closet {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name      String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  ownerId   String
+  // A closet can hold many items via a join table
+  items     ClosetItem[]
+}
+
+model ClosetItem {
+  closet   Closet @relation(fields: [closetId], references: [id])
+  closetId String
+  item     Item   @relation(fields: [itemId], references: [id])
+  itemId   String
+
+  @@id([closetId, itemId])
+}
